@@ -25,8 +25,8 @@ impl Default for Mpeg4AvcParser {
     }
 }
 
-impl Parser<Mpeg4AvcRecord> for Mpeg4AvcParser {
-    type Error = Error;
+impl<E> Parser<E, Mpeg4AvcRecord> for Mpeg4AvcParser {
+    type Error = Error<E>;
 
     fn parse(&mut self, reader: &mut impl FlvReader) -> Result<Mpeg4AvcRecord, Self::Error> {
         let (mut pps, mut sps) = (Vec::new(), Vec::new());
@@ -94,8 +94,8 @@ pub struct Mpeg4AvcNALUSeq {
     pub(crate) nalus: Vec<Bytes>,
 }
 
-impl Parser<Mpeg4AvcNALUSeq> for Mpeg4AvcParser {
-    type Error = Error;
+impl<E> Parser<E, Mpeg4AvcNALUSeq> for Mpeg4AvcParser {
+    type Error = Error<E>;
 
     fn parse(&mut self, reader: &mut impl FlvReader) -> Result<Mpeg4AvcNALUSeq, Self::Error> {
         let mut nalus = Vec::new();

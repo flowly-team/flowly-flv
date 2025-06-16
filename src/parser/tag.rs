@@ -11,8 +11,8 @@ use crate::{
 
 use super::{FlvParser, Parser};
 
-impl Parser<FlvTagHeader> for FlvParser {
-    type Error = Error;
+impl<E> Parser<E, FlvTagHeader> for FlvParser {
+    type Error = Error<E>;
 
     /// Parse FLV tag header.
     fn parse(&mut self, reader: &mut impl FlvReader) -> Result<FlvTagHeader, Self::Error> {
@@ -41,8 +41,8 @@ impl Parser<FlvTagHeader> for FlvParser {
     }
 }
 
-impl Parser<FlvTag> for FlvParser {
-    type Error = Error;
+impl<E> Parser<E, FlvTag> for FlvParser {
+    type Error = Error<E>;
 
     /// Parse FLV tag data.
     fn parse(&mut self, reader: &mut impl FlvReader) -> Result<FlvTag, Self::Error> {
@@ -53,8 +53,8 @@ impl Parser<FlvTag> for FlvParser {
             data: match header.tag_type {
                 FlvTagType::Audio => FlvTagData::Audio(self.parse(reader)?),
                 FlvTagType::Video => FlvTagData::Video(self.parse(reader)?),
-                FlvTagType::Meta => FlvTagData::Meta(self.parse(reader)?),
-                FlvTagType::Unknown => FlvTagData::Unknown,
+                FlvTagType::Metadata => FlvTagData::Meta(self.parse(reader)?),
+                FlvTagType::Unknown(..) => FlvTagData::Unknown,
             },
         })
     }
@@ -62,16 +62,16 @@ impl Parser<FlvTag> for FlvParser {
 
 impl FlvParser {
     /// Parse FLV tag data.
-    pub(crate) fn parse_flv_data(
+    pub(crate) fn parse_flv_data<E>(
         &mut self,
         reader: &mut impl FlvReader,
         tag_type: FlvTagType,
-    ) -> Result<FlvTagData, Error> {
+    ) -> Result<FlvTagData, Error<E>> {
         Ok(match tag_type {
             FlvTagType::Audio => FlvTagData::Audio(self.parse(reader)?),
             FlvTagType::Video => FlvTagData::Video(self.parse(reader)?),
-            FlvTagType::Meta => FlvTagData::Meta(self.parse(reader)?),
-            FlvTagType::Unknown => FlvTagData::Unknown,
+            FlvTagType::Metadata => FlvTagData::Meta(self.parse(reader)?),
+            FlvTagType::Unknown(..) => FlvTagData::Unknown,
         })
     }
 }

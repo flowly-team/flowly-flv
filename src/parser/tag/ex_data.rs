@@ -5,10 +5,10 @@ use crate::{
     tag::video::{PacketExData, VideoPacketModExType, VideoPacketType},
 };
 
-impl Parser<PacketExData> for FlvParser {
-    type Error = Error;
+impl<E> Parser<E, PacketExData> for FlvParser {
+    type Error = Error<E>;
 
-    fn parse(&mut self, reader: &mut impl FlvReader) -> Result<PacketExData, Error> {
+    fn parse(&mut self, reader: &mut impl FlvReader) -> Result<PacketExData, Self::Error> {
         // Determine the size of the packet ModEx data (ranging from 1 to 256 bytes)
         let mut ex_size = reader.read_u8()? as u16 + 1;
 

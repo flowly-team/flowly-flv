@@ -7,8 +7,9 @@ use crate::{
     },
 };
 
-impl Parser<AudioTagHeader> for FlvParser {
-    type Error = Error;
+impl<E> Parser<E, AudioTagHeader> for FlvParser {
+    type Error = Error<E>;
+
     /// Parse audio tag data header.
     fn parse(&mut self, reader: &mut impl FlvReader) -> Result<AudioTagHeader, Self::Error> {
         let header = reader.read_u8()?;
@@ -22,8 +23,8 @@ impl Parser<AudioTagHeader> for FlvParser {
     }
 }
 
-impl Parser<AudioTagBody> for FlvParser {
-    type Error = Error;
+impl<E> Parser<E, AudioTagBody> for FlvParser {
+    type Error = Error<E>;
 
     /// Parse audio tag data body.
     fn parse(&mut self, reader: &mut impl FlvReader) -> Result<AudioTagBody, Self::Error> {
@@ -33,8 +34,8 @@ impl Parser<AudioTagBody> for FlvParser {
     }
 }
 
-impl Parser<AudioTag> for FlvParser {
-    type Error = Error;
+impl<E> Parser<E, AudioTag> for FlvParser {
+    type Error = Error<E>;
     /// Parse audio tag data.
     fn parse(&mut self, reader: &mut impl FlvReader) -> Result<AudioTag, Self::Error> {
         let header: AudioTagHeader = self.parse(reader)?;

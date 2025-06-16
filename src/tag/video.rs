@@ -1,8 +1,7 @@
 use bytes::Bytes;
+use flowly::Fourcc;
 
 pub mod mpeg4_avc;
-
-use crate::fourcc::Fourcc;
 
 /// The tag data part of `video` FLV tag, including `tag data header` and `tag data body`.
 #[derive(Clone, Debug, PartialEq)]
@@ -19,8 +18,8 @@ pub struct VideoTag {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct VideoTagBody {
-    pub pts_offset: i64,
-    pub params: Option<Vec<Bytes>>,
+    pub pts_offset: i32,
+    pub param_count: u32,
     pub nalus: Vec<Bytes>,
 }
 
@@ -63,6 +62,8 @@ pub enum VideoPacketType {
     /// enabling support for high-precision timestamps or other advanced               
     /// features that enhance the base packet structure.
     ModEx = 7,
+
+    Unknown(u8),
 }
 
 impl From<u8> for VideoPacketType {
@@ -110,25 +111,14 @@ impl From<u8> for AvMultitrackType {
 
 /// The `tag data header` part of `video` FLV tag data.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum VideoTagHeader {
-    /// Reference Enhancing FLV https://veovera.org/docs/enhanced/enhanced-rtmp-v2
-    Enhanced {
-        /// Enhanced Packet Type
-        pkt_type: VideoPacketType,
-        multitrack: bool,
-        fourcc: Option<Fourcc>,
-        video_command: Option<u8>,
-        has_body: bool,
-        multitrack_type: AvMultitrackType,
-    },
-
-    Original {
-        /// The frame type of `video` FLV tag, 4 bits.
-        frame_type: VideoFrameType,
-
-        /// The codec id of `video` FLV tag, 4 bits.
-        codec_id: CodecID,
-    },
+pub struct VideoTagHeader {
+    pub frame_type: VideoFrameType,
+    pub pkt_type: VideoPacketType,
+    pub multitrack: bool,
+    pub fourcc: Fourcc,
+    pub has_body: bool,
+    pub multitrack_type: AvMultitrackType,
+    pub(crate) enhanced: bool,
 }
 
 impl From<u8> for VideoPacketModExType {

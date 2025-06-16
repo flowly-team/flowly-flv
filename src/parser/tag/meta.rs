@@ -11,8 +11,8 @@ use crate::{
 
 const OBJECT_END_MARKER: [u8; 3] = [0x00, 0x00, 0x09];
 
-impl Parser<MetaTag> for FlvParser {
-    type Error = Error;
+impl<E> Parser<E, MetaTag> for FlvParser {
+    type Error = Error<E>;
 
     /// Parse script tag data.
     fn parse(&mut self, reader: &mut impl FlvReader) -> Result<MetaTag, Self::Error> {
@@ -29,16 +29,16 @@ impl Parser<MetaTag> for FlvParser {
 
 impl FlvParser {
     #[inline]
-    fn parse_meta_string(&mut self, reader: &mut impl FlvReader) -> Result<Bytes, Error> {
+    fn parse_meta_string<E>(&mut self, reader: &mut impl FlvReader) -> Result<Bytes, Error<E>> {
         let len = reader.read_u16()? as usize;
 
         Ok(reader.read_to_bytes(len as usize)?)
     }
 
-    fn parse_meta_object(
+    fn parse_meta_object<E>(
         &mut self,
         reader: &mut impl FlvReader,
-    ) -> Result<HashMap<Bytes, MetaDataValue>, Error> {
+    ) -> Result<HashMap<Bytes, MetaDataValue>, Error<E>> {
         let mut props = HashMap::new();
 
         while reader.available() >= 3 && reader.peek(0..3)? != OBJECT_END_MARKER {
@@ -49,8 +49,8 @@ impl FlvParser {
     }
 }
 
-impl Parser<MetaDataValue> for FlvParser {
-    type Error = Error;
+impl<E> Parser<E, MetaDataValue> for FlvParser {
+    type Error = Error<E>;
 
     /// Parse script tag data value.
     fn parse(&mut self, reader: &mut impl FlvReader) -> Result<MetaDataValue, Self::Error> {

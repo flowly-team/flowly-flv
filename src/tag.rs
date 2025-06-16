@@ -21,16 +21,16 @@ pub struct FlvTag {
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum FlvTagType {
     /// Audio tag type.
-    Audio = 0x08,
+    Audio,
 
     /// Video tag type.
-    Video = 0x09,
+    Video,
 
     /// Script tag type.
-    Meta = 0x18,
+    Metadata,
 
     // Unknown
-    Unknown,
+    Unknown(u8),
 }
 
 impl From<u8> for FlvTagType {
@@ -38,8 +38,19 @@ impl From<u8> for FlvTagType {
         match value {
             8 => FlvTagType::Audio,
             9 => FlvTagType::Video,
-            18 => FlvTagType::Meta,
-            _ => FlvTagType::Unknown,
+            18 => FlvTagType::Metadata,
+            t => FlvTagType::Unknown(t),
+        }
+    }
+}
+
+impl From<FlvTagType> for u8 {
+    fn from(value: FlvTagType) -> Self {
+        match value {
+            FlvTagType::Audio => 8,
+            FlvTagType::Video => 9,
+            FlvTagType::Metadata => 18,
+            FlvTagType::Unknown(v) => v,
         }
     }
 }

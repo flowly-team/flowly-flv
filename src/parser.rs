@@ -4,8 +4,9 @@ use crate::{
 
 mod tag;
 
-pub trait Parser<T> {
+pub trait Parser<E, T> {
     type Error;
+
     fn parse(&mut self, reader: &mut impl FlvReader) -> Result<T, Self::Error>;
 }
 
@@ -14,8 +15,8 @@ pub struct FlvParser {
     mpeg4_avc_parser: Option<Mpeg4AvcParser>,
 }
 
-impl Parser<FlvHeader> for FlvParser {
-    type Error = Error;
+impl<E> Parser<E, FlvHeader> for FlvParser {
+    type Error = Error<E>;
 
     fn parse(&mut self, reader: &mut impl FlvReader) -> Result<FlvHeader, Self::Error> {
         let mut signature = [0u8; 3];

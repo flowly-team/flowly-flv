@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct FlvHeader {
     /// The version of the FLV file.
     pub version: u8,
