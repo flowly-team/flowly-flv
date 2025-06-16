@@ -1,13 +1,13 @@
 use std::pin::pin;
 
-use bytes::{Buf, Bytes};
+use bytes::Bytes;
 use error::Error;
 use flowly::{Fourcc, Frame, FrameFlags, Service};
 use futures::{Stream, TryStreamExt};
 use header::FlvHeader;
 use parser::{FlvParser, Parser};
 use tag::{FlvTag, FlvTagHeader, FlvTagType};
-use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncReadExt, BufReader};
+use tokio::io::{AsyncRead, AsyncReadExt, BufReader};
 use tokio_util::io::StreamReader;
 
 pub mod error;
@@ -85,17 +85,26 @@ pub struct FlvDemuxer {
     tracks_filter: u64,
 }
 
+impl FlvDemuxer {
+    pub fn new(flags_filter: FrameFlags, tracks_filter: u64) -> Self {
+        Self {
+            flags_filter,
+            tracks_filter,
+        }
+    }
+}
+
 impl Default for FlvDemuxer {
     fn default() -> Self {
         Self {
-            flags_filter: FrameFlags::empty(),
+            flags_filter: FrameFlags::VIDEO_STREAM,
             tracks_filter: !0,
         }
     }
 }
 
-impl<F: Buf + Send, E: std::error::Error + Send + Sync + 'static> Service<Result<F, E>>
-    for FlvDemuxer
+impl<F: AsRef<[u8]> + Send + 'static, E: std::error::Error + Send + Sync + 'static>
+    Service<Result<F, E>> for FlvDemuxer
 {
     type Out = Result<FlvFrame, Error<E>>;
 
@@ -117,7 +126,8 @@ impl<F: Buf + Send, E: std::error::Error + Send + Sync + 'static> Service<Result
             tag_type_filter |= 0b1 << u8::from(FlvTagType::Metadata);
         }
 
-        let reader = StreamReader::new(input.map_err(Error::Other));
+        let reader = StreamReader::new(input.map_ok(std::io::Cursor::new).map_err(Error::Other));
+
         demux_flv_stream_inner(reader, tag_type_filter).try_filter_map(move |tag| async move {
             Ok(match tag.data {
                 tag::FlvTagData::Video(vtag) => {
@@ -125,10 +135,10 @@ impl<F: Buf + Send, E: std::error::Error + Send + Sync + 'static> Service<Result
                         None
                     } else {
                         Some(FlvFrame {
-                            dts: tag.header.timestamp as _,
+                            dts: tag.header.timestamp as u64 * 1000,
                             track_id: vtag.track_id as _,
                             flags: FrameFlags::empty(),
-                            pts_offset: vtag.body.pts_offset,
+                            pts_offset: vtag.body.pts_offset * 1000,
                             codec: vtag.header.fourcc,
                             params_count: vtag.body.param_count,
                             payload: vtag.body.nalus,
@@ -158,7 +168,11 @@ fn demux_flv_stream_inner<E, R: AsyncRead>(
 
         // skipping offset if present
         if header.remaining > 0 {
-            reader.consume(header.remaining as _);
+            if buff.len() < header.remaining as usize {
+                buff.resize(header.remaining as usize, 0);
+            }
+
+            reader.read_exact(&mut buff[0..header.remaining as usize]).await?;
         }
 
         while let Ok(_) = reader.read_u32().await {
@@ -169,18 +183,17 @@ fn demux_flv_stream_inner<E, R: AsyncRead>(
             };
 
             let header: FlvTagHeader = parser.parse(&mut &buff[0..11])?;
+            if buff.len() < header.data_size as usize {
+                buff.resize(header.data_size as usize, 0);
+            }
+
+            match reader.read_exact(&mut buff[0..header.data_size as usize]).await {
+                Ok(_) => (),
+                Err(err) if err.kind() == std::io::ErrorKind::UnexpectedEof => break,
+                Err(err) => yield Err(err.into())
+            }
 
             if tag_types & (1u64 << u8::from(header.tag_type)) > 0 {
-                if buff.len() < header.data_size as usize {
-                    buff.resize(header.data_size as usize, 0);
-                }
-
-                match reader.read_exact(&mut buff[0..header.data_size as usize]).await {
-                    Ok(_) => (),
-                    Err(err) if err.kind() == std::io::ErrorKind::UnexpectedEof => break,
-                    Err(err) => yield Err(err.into())
-                }
-
                 let mut tag_data = Bytes::from(buff[0..header.data_size as usize].to_vec());
 
                 yield Ok(FlvTag {
