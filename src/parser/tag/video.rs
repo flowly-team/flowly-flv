@@ -172,7 +172,6 @@ impl<E> Parser<E, VideoTag> for FlvParser {
                 Fourcc::VIDEO_AVC | Fourcc::VIDEO_HEVC => {
                     if self.mpeg4_avc_parser.is_none() {
                         self.mpeg4_avc_parser = Some(Default::default());
-                        println!("create avc parser");
                     }
 
                     let packet_type = AvcPacketType::from(reader.read_u8()?);

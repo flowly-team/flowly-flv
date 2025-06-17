@@ -21,6 +21,7 @@ pub const DEMUX_ALL_TYPES: u64 = -1i64 as u64;
 #[cfg(feature = "serde")]
 pub mod serde;
 
+#[derive(Debug, Clone)]
 pub struct FlvFrame {
     dts: u64,
     track_id: u32,

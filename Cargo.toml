@@ -1,6 +1,6 @@
 [package]
 name = "flowly-flv"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "FLV format streaming parser"
 keywords = ["flv", "parser", "async", "demuxer", "amf"]
